@@ -1,5 +1,5 @@
 // app/(tabs)/history.js
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,23 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
-import { DUMMY_HISTORY } from "../../src/utils/dummyData";
+import { DUMMY_HISTORY, HISTORY_DATES } from "../../src/utils/dummyData";
 import HistoryCard from "../../src/components/HistoryCard";
 
 export default function HistoryScreen() {
+  // 1. Set up our state for the Search Bar and the active Date
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeDate, setActiveDate] = useState(HISTORY_DATES[0].fullDate); // Defaults to "14 مارچ 2026"
+
+  // 2. The Filter Logic: This runs every time the user types or clicks a date
+  const filteredHistory = DUMMY_HISTORY.filter((record) => {
+    const matchesDate = record.fullDate === activeDate;
+    const matchesSearch = record.cropName
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return matchesDate && matchesSearch;
+  });
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -34,10 +47,18 @@ export default function HistoryScreen() {
           style={styles.searchInput}
           placeholder="فصل تلاش کریں..."
           placeholderTextColor={COLORS.textMuted}
+          value={searchQuery}
+          onChangeText={(text) => setSearchQuery(text)}
         />
+        {/* Quick clear button if text exists */}
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Date Selector (Horizontal Scroll) */}
+      {/* Interactive Date Selector */}
       <View style={styles.dateSection}>
         <Text style={styles.sectionTitle}>تاریخ منتخب کریں</Text>
         <ScrollView
@@ -45,38 +66,53 @@ export default function HistoryScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.dateScroll}
         >
-          {/* Active Date */}
-          <View style={[styles.dateBox, styles.dateBoxActive]}>
-            <Text style={[styles.dateDay, styles.textWhite]}>TODAY</Text>
-            <Text style={[styles.dateNumber, styles.textWhite]}>14</Text>
-            <Text style={[styles.dateMonth, styles.textWhite]}>مارچ</Text>
-          </View>
-          {/* Inactive Dates */}
-          <View style={styles.dateBox}>
-            <Text style={styles.dateDay}>WED</Text>
-            <Text style={styles.dateNumber}>13</Text>
-            <Text style={styles.dateMonth}>مارچ</Text>
-          </View>
-          <View style={styles.dateBox}>
-            <Text style={styles.dateDay}>TUE</Text>
-            <Text style={styles.dateNumber}>12</Text>
-            <Text style={styles.dateMonth}>مارچ</Text>
-          </View>
+          {HISTORY_DATES.map((dateObj) => {
+            const isActive = activeDate === dateObj.fullDate;
+
+            return (
+              <TouchableOpacity
+                key={dateObj.id}
+                style={[styles.dateBox, isActive && styles.dateBoxActive]}
+                onPress={() => setActiveDate(dateObj.fullDate)}
+              >
+                <Text style={[styles.dateDay, isActive && styles.textWhite]}>
+                  {dateObj.dayName}
+                </Text>
+                <Text style={[styles.dateNumber, isActive && styles.textWhite]}>
+                  {dateObj.dateNum}
+                </Text>
+                <Text style={[styles.dateMonth, isActive && styles.textWhite]}>
+                  {dateObj.month}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       {/* History List */}
       <View style={styles.listHeader}>
-        <Text style={styles.sectionTitle}>گندم کی قیمتوں کا ریکارڈ</Text>
+        <Text style={styles.sectionTitle}>منڈی کا ریکارڈ</Text>
         <Ionicons name="filter" size={20} color={COLORS.textMuted} />
       </View>
 
       <FlatList
-        data={DUMMY_HISTORY}
+        data={filteredHistory}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <HistoryCard record={item} />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <Text
+            style={{
+              textAlign: "center",
+              color: COLORS.textMuted,
+              marginTop: 20,
+            }}
+          >
+            کوئی ریکارڈ نہیں ملا (No records found)
+          </Text>
+        }
       />
     </View>
   );
@@ -84,23 +120,20 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    padding: 20,
-    paddingTop: 40,
-    alignItems: "center",
-  },
+  header: { padding: 20, paddingTop: 40, alignItems: "center" },
   headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
   searchContainer: {
     flexDirection: "row",
-    backgroundColor: COLORS.inputBackground,
+    backgroundColor: "#FFF",
     marginHorizontal: 20,
     borderRadius: 10,
     paddingHorizontal: 15,
     alignItems: "center",
     height: 50,
+    elevation: 2,
   },
   searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, textAlign: "right" },
+  searchInput: { flex: 1, fontSize: 16, textAlign: "right", paddingRight: 10 },
   dateSection: { marginTop: 20, paddingLeft: 20 },
   sectionTitle: {
     fontSize: 18,
@@ -117,6 +150,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 10,
     elevation: 1,
+    minWidth: 80,
   },
   dateBoxActive: { backgroundColor: COLORS.primary },
   dateDay: { fontSize: 12, color: COLORS.textMuted, fontWeight: "bold" },

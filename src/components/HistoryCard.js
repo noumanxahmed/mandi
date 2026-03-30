@@ -6,10 +6,10 @@ import { COLORS } from "../theme/colors";
 export default function HistoryCard({ record }) {
   return (
     <View style={styles.card}>
-      {/* Date Section */}
-      <View style={styles.dateContainer}>
-        <Text style={styles.dateText}>{record.date}</Text>
-        <Text style={styles.dayText}>{record.day}</Text>
+      {/* Crop Name & Date Section */}
+      <View style={styles.infoContainer}>
+        <Text style={styles.cropText}>{record.cropName}</Text>
+        <Text style={styles.dateText}>{record.fullDate}</Text>
       </View>
 
       {/* Min Price Section */}
@@ -38,28 +38,27 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     alignItems: "center",
     justifyContent: "space-between",
-    elevation: 1, // Subtle shadow
+    elevation: 2,
   },
-  dateContainer: {
+  infoContainer: {
     flex: 1.2,
   },
-  dateText: {
+  cropText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: COLORS.textDark,
+    color: COLORS.primary,
+    marginBottom: 4,
   },
-  dayText: {
+  dateText: {
     fontSize: 12,
     color: COLORS.textMuted,
-    marginTop: 4,
-    textTransform: "uppercase",
   },
   priceContainer: {
     flex: 1,
     alignItems: "center",
   },
   minBadge: {
-    backgroundColor: "#FFEBEE", // Light red/pink
+    backgroundColor: "#FFEBEE",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
@@ -71,13 +70,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   minPrice: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
     color: COLORS.alert,
   },
   maxBox: {
     flex: 1.2,
-    backgroundColor: "#C8E6C9", // Light green box from design
+    backgroundColor: "#C8E6C9",
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: "center",
@@ -90,7 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   maxPrice: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
     color: COLORS.primary,
   },

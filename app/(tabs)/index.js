@@ -34,5 +34,5 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 15,
   },
   headerTitle: { color: "#FFF", fontSize: 24, fontWeight: "bold" },
-  list: { padding: 15 },
+  list: { padding: 15 }, // <-- This is the line that was causing the error!
 });
