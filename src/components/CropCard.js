@@ -1,19 +1,19 @@
 // src/components/CropCard.js
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Built-in Expo icons
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../theme/colors";
 
 export default function CropCard({ crop }) {
   return (
     <View style={styles.card}>
-      {/* Fake Image Placeholder since we are skipping images for now */}
       <View style={styles.imagePlaceholder}>
         <Ionicons name="leaf" size={40} color={COLORS.primary} />
       </View>
 
       <View style={styles.content}>
         <Text style={styles.cropName}>{crop.name}</Text>
+        {/* The Year is now included here from the dummy data */}
         <Text style={styles.dateText}>آج کی قیمت: {crop.date}</Text>
 
         <View style={styles.priceRow}>
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
-    elevation: 2, // Android shadow
+    elevation: 2,
     alignItems: "center",
   },
   imagePlaceholder: {
@@ -49,18 +49,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15, // RTL naturally pushes this to the left side
+    marginRight: 15,
   },
   content: {
     flex: 1,
   },
   cropName: {
-    fontSize: 20,
+    fontSize: 18, // Slightly smaller to give more space
     fontWeight: "bold",
     color: COLORS.textDark,
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 13, // UPDATED: Fits "30 مارچ 2026" on one line
     color: COLORS.textMuted,
     marginBottom: 8,
   },
@@ -69,16 +69,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  maxText: { fontSize: 14, color: COLORS.textDark },
+  maxText: { fontSize: 13, color: COLORS.textDark },
   maxPrice: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
     color: COLORS.success,
     marginRight: 5,
   },
-  minText: { fontSize: 14, color: COLORS.textDark },
+  minText: { fontSize: 13, color: COLORS.textDark },
   minPrice: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
     color: COLORS.alert,
     marginRight: 5,
