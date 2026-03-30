@@ -17,6 +17,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "ہوم", // Home
+
           tabBarIcon: ({ color }) => (
             <Ionicons name="home" size={24} color={color} />
           ),

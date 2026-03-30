@@ -34,7 +34,7 @@ export default function HomeScreen() {
       {/* Floating Action Button (FAB) */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push("/admin")}
+        onPress={() => router.push("/add-crop")}
       >
         <Ionicons name="add" size={32} color={COLORS.textDark} />
       </TouchableOpacity>
