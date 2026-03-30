@@ -8,26 +8,61 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker"; // <-- The new Calendar!
 import { COLORS } from "../theme/colors";
-import { DUMMY_CROPS } from "../utils/dummyData"; // Importing our fake database!
+import { DUMMY_CROPS, DUMMY_HISTORY } from "../utils/dummyData"; // Importing both lists now!
+
+// Dictionary to translate computer months to Urdu
+const urduMonths = [
+  "جنوری",
+  "فروری",
+  "مارچ",
+  "اپریل",
+  "مئی",
+  "جون",
+  "جولائی",
+  "اگست",
+  "ستمبر",
+  "اکتوبر",
+  "نومبر",
+  "دسمبر",
+];
 
 export default function AdminDashboard({ onLogout }) {
   const router = useRouter();
 
-  // --- THE DIGITAL BUCKETS (React State) ---
-  // We use these to hold the data temporarily before sending it to Firebase
+  // --- DIGITAL BUCKETS ---
   const [selectedCrop, setSelectedCrop] = useState(DUMMY_CROPS[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [date, setDate] = useState("30 مارچ 2026");
+
+  // Date Picker State
+  const [date, setDate] = useState(new Date()); // Automatically sets to TODAY'S exact date!
+  const [showPicker, setShowPicker] = useState(false); // Controls if the calendar is open or hidden
+
   const [maxPrice, setMaxPrice] = useState("");
   const [minPrice, setMinPrice] = useState("");
 
-  // --- THE FIREBASE WAITING ROOM ---
+  // Function to format the standard date into our Urdu format (e.g., "30 مارچ 2026")
+  const getFormattedUrduDate = (currentDate) => {
+    const day = currentDate.getDate();
+    const month = urduMonths[currentDate.getMonth()];
+    const year = currentDate.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  // Handles when the user picks a date on the calendar
+  const onChangeDate = (event, selectedDate) => {
+    setShowPicker(Platform.OS === "ios"); // iOS keeps it open, Android closes it automatically
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
+
   const handleUpdate = () => {
-    // 1. Validation: Make sure the admin didn't leave the boxes empty
     if (!maxPrice || !minPrice) {
       Alert.alert(
         "غلطی (Error)",
@@ -36,25 +71,28 @@ export default function AdminDashboard({ onLogout }) {
       return;
     }
 
-    // 2. The Payload: Packaging the data exactly how Firebase will want it
-    const updatePayload = {
-      cropId: selectedCrop.id,
+    const formattedDate = getFormattedUrduDate(date);
+
+    // 1. Create the new history record
+    const newHistoryRecord = {
+      id: Math.random().toString(), // Fake ID
       cropName: selectedCrop.name,
-      updateDate: date,
-      maximumPrice: Number(maxPrice),
-      minimumPrice: Number(minPrice),
+      fullDate: formattedDate, // Uses our perfectly formatted Urdu date!
+      maxPrice: Number(maxPrice),
+      minPrice: Number(minPrice),
     };
 
-    // 3. Simulation: Right now we just log it. Later, we swap this log for a Firebase function!
-    console.log("📦 READY TO SEND TO FIREBASE:", updatePayload);
+    // 2. Link it! Push the new record to the TOP of the dummy history list
+    DUMMY_HISTORY.unshift(newHistoryRecord);
 
-    // 4. Success Feedback
+    console.log("✅ NEW RECORD ADDED TO HISTORY:", newHistoryRecord);
+
     Alert.alert(
       "کامیابی (Success)",
-      `${selectedCrop.name} کی قیمت اپ ڈیٹ ہو گئی۔`,
+      `${selectedCrop.name} کی قیمت ${formattedDate} کے لیے اپ ڈیٹ ہو گئی۔`,
     );
 
-    // 5. Clear the buckets for the next entry
+    // Clear the prices for the next entry
     setMaxPrice("");
     setMinPrice("");
   };
@@ -76,7 +114,6 @@ export default function AdminDashboard({ onLogout }) {
         </View>
 
         <View style={styles.formSection}>
-          {/* --- INTERACTIVE CROP DROPDOWN --- */}
           <Text style={styles.label}>فصل منتخب کریں</Text>
           <TouchableOpacity
             style={styles.inputBox}
@@ -90,7 +127,6 @@ export default function AdminDashboard({ onLogout }) {
             />
           </TouchableOpacity>
 
-          {/* The hidden list that appears when you click the dropdown */}
           {isDropdownOpen && (
             <View style={styles.dropdownMenu}>
               {DUMMY_CROPS.map((crop) => (
@@ -99,7 +135,7 @@ export default function AdminDashboard({ onLogout }) {
                   style={styles.dropdownItem}
                   onPress={() => {
                     setSelectedCrop(crop);
-                    setIsDropdownOpen(false); // Close menu after selecting
+                    setIsDropdownOpen(false);
                   }}
                 >
                   <Text style={styles.dropdownItemText}>{crop.name}</Text>
@@ -108,23 +144,31 @@ export default function AdminDashboard({ onLogout }) {
             </View>
           )}
 
-          {/* --- DATE INPUT --- */}
+          {/* --- NATIVE CALENDAR BOX --- */}
           <Text style={styles.label}>تاریخ منتخب کریں</Text>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={[styles.inputText, { flex: 1, textAlign: "right" }]}
-              value={date}
-              onChangeText={setDate}
-            />
+          <TouchableOpacity
+            style={styles.inputBox}
+            onPress={() => setShowPicker(true)}
+          >
+            {/* We display the nicely formatted Urdu date to the user */}
+            <Text style={styles.inputText}>{getFormattedUrduDate(date)}</Text>
             <Ionicons
               name="calendar-outline"
               size={20}
               color={COLORS.textMuted}
-              style={{ marginLeft: 10 }}
             />
-          </View>
+          </TouchableOpacity>
 
-          {/* --- MAX PRICE INPUT --- */}
+          {/* The actual popup calendar widget */}
+          {showPicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={onChangeDate}
+            />
+          )}
+
           <Text style={styles.label}>زیادہ سے زیادہ قیمت</Text>
           <View style={styles.priceInputBox}>
             <Text style={styles.currency}>PKR</Text>
@@ -138,7 +182,6 @@ export default function AdminDashboard({ onLogout }) {
             <Ionicons name="trending-up" size={20} color={COLORS.success} />
           </View>
 
-          {/* --- MIN PRICE INPUT --- */}
           <Text style={styles.label}>کم از کم قیمت</Text>
           <View style={styles.priceInputBox}>
             <Text style={styles.currency}>PKR</Text>
@@ -152,7 +195,6 @@ export default function AdminDashboard({ onLogout }) {
             <Ionicons name="trending-down" size={20} color={COLORS.alert} />
           </View>
 
-          {/* --- SUBMIT BUTTON --- */}
           <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
             <Text style={styles.updateButtonText}>قیمت اپ ڈیٹ کریں</Text>
             <Ionicons
@@ -165,7 +207,6 @@ export default function AdminDashboard({ onLogout }) {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push("/add-crop")}
@@ -213,8 +254,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputText: { fontSize: 16, color: COLORS.textDark },
-
-  // New Styles for our Dropdown!
   dropdownMenu: {
     backgroundColor: "#FFF",
     borderRadius: 8,
@@ -236,7 +275,6 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     textAlign: "right",
   },
-
   priceInputBox: {
     flexDirection: "row",
     alignItems: "center",

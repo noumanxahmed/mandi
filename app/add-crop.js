@@ -8,47 +8,75 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker"; // <-- Added Calendar
 import { COLORS } from "../src/theme/colors";
-import { DUMMY_CROPS } from "../src/utils/dummyData"; // Importing our dummy database!
+import { DUMMY_CROPS } from "../src/utils/dummyData";
+
+// Urdu Month Dictionary
+const urduMonths = [
+  "جنوری",
+  "فروری",
+  "مارچ",
+  "اپریل",
+  "مئی",
+  "جون",
+  "جولائی",
+  "اگست",
+  "ستمبر",
+  "اکتوبر",
+  "نومبر",
+  "دسمبر",
+];
 
 export default function AddCropScreen() {
   const router = useRouter();
 
-  // --- DIGITAL BUCKETS FOR THE NEW CROP ---
+  // --- STATE BUCKETS ---
   const [cropName, setCropName] = useState("");
-  const [date, setDate] = useState("30 مارچ 2026"); // Today's date
+  const [date, setDate] = useState(new Date()); // Default to TODAY
+  const [showPicker, setShowPicker] = useState(false);
   const [maxPrice, setMaxPrice] = useState("");
   const [minPrice, setMinPrice] = useState("");
 
-  // --- THE SAVE FUNCTION ---
+  // Format Date to Urdu (e.g., "30 مارچ 2026")
+  const getFormattedUrduDate = (currentDate) => {
+    const day = currentDate.getDate();
+    const month = urduMonths[currentDate.getMonth()];
+    const year = currentDate.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const onChangeDate = (event, selectedDate) => {
+    setShowPicker(Platform.OS === "ios");
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
+
   const handleSave = () => {
-    // 1. Validation: Don't let them save an empty form
     if (!cropName || !maxPrice || !minPrice) {
       Alert.alert("غلطی (Error)", "براہ کرم تمام معلومات درج کریں۔");
       return;
     }
 
-    // 2. Create the new crop object
+    const formattedDate = getFormattedUrduDate(date);
+
     const newCrop = {
-      id: Math.random().toString(), // Generates a random ID for testing
+      id: Math.random().toString(),
       name: cropName,
-      date: date,
+      date: formattedDate, // Now using the Urdu calendar date
       maxPrice: Number(maxPrice),
       minPrice: Number(minPrice),
-      trend: "up", // Fake trend for now
+      trend: "up",
       percentage: "+0.0%",
     };
 
-    // 3. Push it into our Dummy Data Array (Temporary Memory!)
     DUMMY_CROPS.push(newCrop);
 
-    console.log("✅ NEW CROP ADDED:", newCrop);
-    console.log("📦 CURRENT DATABASE:", DUMMY_CROPS);
-
-    // 4. Show success message and go back to the Admin Dashboard
     Alert.alert("کامیابی (Success)", "نئی فصل کامیابی سے شامل کر لی گئی۔", [
       { text: "OK", onPress: () => router.back() },
     ]);
@@ -56,7 +84,6 @@ export default function AddCropScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color={COLORS.primary} />
@@ -70,7 +97,6 @@ export default function AddCropScreen() {
         <Text style={styles.subTitle}>تازہ ترین منڈی کے نرخ اپ ڈیٹ کریں</Text>
       </View>
 
-      {/* Image Upload Box (Dashed) */}
       <TouchableOpacity style={styles.uploadBox}>
         <View style={styles.cameraIconBox}>
           <Ionicons name="camera" size={30} color="#FFF" />
@@ -80,7 +106,6 @@ export default function AddCropScreen() {
       </TouchableOpacity>
 
       <View style={styles.formSection}>
-        {/* Crop Name */}
         <Text style={styles.label}>فصل کا نام</Text>
         <View style={styles.inputBox}>
           <TextInput
@@ -98,19 +123,30 @@ export default function AddCropScreen() {
           />
         </View>
 
-        {/* Date */}
+        {/* --- CLICKABLE CALENDAR BOX --- */}
         <Text style={styles.label}>تاریخ</Text>
-        <View style={styles.inputBox}>
-          <TextInput style={styles.input} value={date} onChangeText={setDate} />
+        <TouchableOpacity
+          style={styles.inputBox}
+          onPress={() => setShowPicker(true)}
+        >
+          <Text style={styles.input}>{getFormattedUrduDate(date)}</Text>
           <Ionicons
             name="calendar-outline"
             size={20}
             color={COLORS.textDark}
             style={styles.inputIcon}
           />
-        </View>
+        </TouchableOpacity>
 
-        {/* Max Price */}
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onChangeDate}
+          />
+        )}
+
         <Text style={styles.label}>زیادہ سے زیادہ قیمت (روپے)</Text>
         <View
           style={[
@@ -125,7 +161,6 @@ export default function AddCropScreen() {
           <TextInput
             style={[styles.input, { fontWeight: "bold" }]}
             placeholder="0.00"
-            placeholderTextColor={COLORS.textMuted}
             keyboardType="numeric"
             value={maxPrice}
             onChangeText={setMaxPrice}
@@ -138,7 +173,6 @@ export default function AddCropScreen() {
           />
         </View>
 
-        {/* Min Price */}
         <Text style={styles.label}>کم از کم قیمت (روپے)</Text>
         <View
           style={[
@@ -153,7 +187,6 @@ export default function AddCropScreen() {
           <TextInput
             style={[styles.input, { fontWeight: "bold" }]}
             placeholder="0.00"
-            placeholderTextColor={COLORS.textMuted}
             keyboardType="numeric"
             value={minPrice}
             onChangeText={setMinPrice}
@@ -182,7 +215,6 @@ export default function AddCropScreen() {
           </View>
         </View>
 
-        {/* Save Button */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>محفوظ کریں</Text>
           <Ionicons
