@@ -8,109 +8,73 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker"; // <-- Added Calendar
 import { COLORS } from "../src/theme/colors";
-import { DUMMY_CROPS } from "../src/utils/dummyData";
 
-// Urdu Month Dictionary
-const urduMonths = [
-  "جنوری",
-  "فروری",
-  "مارچ",
-  "اپریل",
-  "مئی",
-  "جون",
-  "جولائی",
-  "اگست",
-  "ستمبر",
-  "اکتوبر",
-  "نومبر",
-  "دسمبر",
-];
+// --- FIREBASE IMPORTS ---
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../src/config/firebase";
 
 export default function AddCropScreen() {
   const router = useRouter();
 
-  // --- STATE BUCKETS ---
+  // --- STATE ---
   const [cropName, setCropName] = useState("");
-  const [date, setDate] = useState(new Date()); // Default to TODAY
-  const [showPicker, setShowPicker] = useState(false);
-  const [maxPrice, setMaxPrice] = useState("");
-  const [minPrice, setMinPrice] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Format Date to Urdu (e.g., "30 مارچ 2026")
-  const getFormattedUrduDate = (currentDate) => {
-    const day = currentDate.getDate();
-    const month = urduMonths[currentDate.getMonth()];
-    const year = currentDate.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  const onChangeDate = (event, selectedDate) => {
-    setShowPicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
-  };
-
-  const handleSave = () => {
-    if (!cropName || !maxPrice || !minPrice) {
-      Alert.alert("غلطی (Error)", "براہ کرم تمام معلومات درج کریں۔");
+  // --- SAVE TO FIREBASE ---
+  const handleSaveCategory = async () => {
+    if (!cropName.trim()) {
+      Alert.alert("غلطی", "براہ کرم فصل کا نام درج کریں۔");
       return;
     }
 
-    const formattedDate = getFormattedUrduDate(date);
+    setIsSubmitting(true);
 
-    const newCrop = {
-      id: Math.random().toString(),
-      name: cropName,
-      date: formattedDate, // Now using the Urdu calendar date
-      maxPrice: Number(maxPrice),
-      minPrice: Number(minPrice),
-      trend: "up",
-      percentage: "+0.0%",
-    };
+    try {
+      // 🚩 Sending to the 'availableCrops' collection
+      await addDoc(collection(db, "availableCrops"), {
+        name: cropName.trim(),
+        createdAt: new Date(),
+      });
 
-    DUMMY_CROPS.push(newCrop);
-
-    Alert.alert("کامیابی (Success)", "نئی فصل کامیابی سے شامل کر لی گئی۔", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+      Alert.alert("کامیابی", `${cropName} لسٹ میں شامل ہو گئی۔`, [
+        { text: "ٹھیک ہے", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error("❌ Firebase Error:", error);
+      Alert.alert("غلطی", "ڈیٹا محفوظ کرنے میں مسئلہ پیش آیا۔");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>نئی فصل</Text>
+        <Text style={styles.headerTitle}>نئی فصل شامل کریں</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <View style={styles.titleSection}>
-        <Text style={styles.mainTitle}>ڈیجیٹل لیجر کی نئی انٹری</Text>
-        <Text style={styles.subTitle}>تازہ ترین منڈی کے نرخ اپ ڈیٹ کریں</Text>
+        <Text style={styles.mainTitle}>فصل کی کیٹیگری</Text>
+        <Text style={styles.subTitle}>نئی فصل کو ڈیٹا بیس میں شامل کریں</Text>
       </View>
 
-      <TouchableOpacity style={styles.uploadBox}>
-        <View style={styles.cameraIconBox}>
-          <Ionicons name="camera" size={30} color="#FFF" />
-        </View>
-        <Text style={styles.uploadText}>فصل کی تصویر منتخب کریں</Text>
-        <Text style={styles.uploadSubText}>PNG, JPG up to 10MB</Text>
-      </TouchableOpacity>
-
+      {/* Form Section */}
       <View style={styles.formSection}>
-        <Text style={styles.label}>فصل کا نام</Text>
+        <Text style={styles.label}>فصل کا نام (Urdu/English)</Text>
         <View style={styles.inputBox}>
           <TextInput
             style={styles.input}
-            placeholder="مثلاً مکئی (Corn)"
+            placeholder="مثلاً: کپاس (Cotton)"
             placeholderTextColor={COLORS.textMuted}
             value={cropName}
             onChangeText={setCropName}
@@ -123,82 +87,6 @@ export default function AddCropScreen() {
           />
         </View>
 
-        {/* --- CLICKABLE CALENDAR BOX --- */}
-        <Text style={styles.label}>تاریخ</Text>
-        <TouchableOpacity
-          style={styles.inputBox}
-          onPress={() => setShowPicker(true)}
-        >
-          <Text style={styles.input}>{getFormattedUrduDate(date)}</Text>
-          <Ionicons
-            name="calendar-outline"
-            size={20}
-            color={COLORS.textDark}
-            style={styles.inputIcon}
-          />
-        </TouchableOpacity>
-
-        {showPicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={onChangeDate}
-          />
-        )}
-
-        <Text style={styles.label}>زیادہ سے زیادہ قیمت (روپے)</Text>
-        <View
-          style={[
-            styles.inputBox,
-            {
-              backgroundColor: "#FFF",
-              borderColor: COLORS.border,
-              borderWidth: 1,
-            },
-          ]}
-        >
-          <TextInput
-            style={[styles.input, { fontWeight: "bold" }]}
-            placeholder="0.00"
-            keyboardType="numeric"
-            value={maxPrice}
-            onChangeText={setMaxPrice}
-          />
-          <Ionicons
-            name="trending-up"
-            size={20}
-            color={COLORS.primary}
-            style={styles.inputIcon}
-          />
-        </View>
-
-        <Text style={styles.label}>کم از کم قیمت (روپے)</Text>
-        <View
-          style={[
-            styles.inputBox,
-            {
-              backgroundColor: "#FFF",
-              borderColor: COLORS.border,
-              borderWidth: 1,
-            },
-          ]}
-        >
-          <TextInput
-            style={[styles.input, { fontWeight: "bold" }]}
-            placeholder="0.00"
-            keyboardType="numeric"
-            value={minPrice}
-            onChangeText={setMinPrice}
-          />
-          <Ionicons
-            name="trending-down"
-            size={20}
-            color={COLORS.alert}
-            style={styles.inputIcon}
-          />
-        </View>
-
         <View style={styles.noteBox}>
           <Ionicons
             name="information-circle"
@@ -207,22 +95,32 @@ export default function AddCropScreen() {
             style={styles.noteIcon}
           />
           <View style={styles.noteTextContainer}>
-            <Text style={styles.noteTitle}>ضروری نوٹ</Text>
+            <Text style={styles.noteTitle}>ہدایت</Text>
             <Text style={styles.noteText}>
-              درج کردہ قیمتیں پنجاب بھر کی بڑی منڈیوں کے اوسط نرخوں کے مطابق
-              ہونی چاہئیں۔
+              یہاں صرف فصل کا نام لکھیں۔ اس کے بعد ایڈمن پینل سے اس کی روزانہ کی
+              قیمت اپ ڈیٹ کر سکیں گے۔
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>محفوظ کریں</Text>
-          <Ionicons
-            name="save-outline"
-            size={20}
-            color="#FFF"
-            style={{ marginLeft: 10 }}
-          />
+        <TouchableOpacity
+          style={[styles.saveButton, isSubmitting && { opacity: 0.7 }]}
+          onPress={handleSaveCategory}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <>
+              <Text style={styles.saveButtonText}>محفوظ کریں</Text>
+              <Ionicons
+                name="cloud-upload-outline"
+                size={22}
+                color="#FFF"
+                style={{ marginLeft: 10 }}
+              />
+            </>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -249,41 +147,20 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 20,
   },
-  headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
-  titleSection: { alignItems: "center", marginBottom: 25 },
+  headerTitle: { fontSize: 20, fontWeight: "bold", color: COLORS.primary },
+  titleSection: { alignItems: "center", marginBottom: 30 },
   mainTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "bold",
     color: COLORS.primary,
     textAlign: "center",
   },
   subTitle: { fontSize: 14, color: COLORS.textMuted, marginTop: 5 },
-  uploadBox: {
-    borderWidth: 2,
-    borderColor: "#C8E6C9",
-    borderStyle: "dashed",
-    borderRadius: 20,
-    padding: 25,
-    alignItems: "center",
-    marginBottom: 30,
-    backgroundColor: "#F9FBF9",
-  },
-  cameraIconBox: {
-    backgroundColor: COLORS.primary,
-    width: 60,
-    height: 60,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  uploadText: { fontSize: 18, fontWeight: "bold", color: COLORS.primary },
-  uploadSubText: { fontSize: 12, color: COLORS.textMuted, marginTop: 5 },
   formSection: { paddingBottom: 40 },
   label: {
     fontSize: 16,
     color: COLORS.textDark,
-    marginBottom: 8,
+    marginBottom: 10,
     fontWeight: "bold",
     textAlign: "right",
   },
@@ -291,23 +168,25 @@ const styles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     backgroundColor: "#E8ECE8",
-    borderRadius: 10,
-    height: 55,
+    borderRadius: 12,
+    height: 60,
     paddingHorizontal: 15,
-    marginBottom: 20,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   inputIcon: { marginLeft: 15 },
-  input: { flex: 1, fontSize: 16, color: COLORS.textDark, textAlign: "right" },
+  input: { flex: 1, fontSize: 18, color: COLORS.textDark, textAlign: "right" },
   noteBox: {
     flexDirection: "row-reverse",
     backgroundColor: "#E8F5E9",
     borderRadius: 15,
     padding: 15,
-    marginBottom: 30,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
+    marginBottom: 35,
+    borderRightWidth: 4,
+    borderRightColor: COLORS.primary,
   },
-  noteIcon: { marginLeft: 15, marginTop: 2 },
+  noteIcon: { marginLeft: 15 },
   noteTextContainer: { flex: 1 },
   noteTitle: {
     fontSize: 16,
@@ -317,10 +196,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   noteText: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textDark,
     textAlign: "right",
-    lineHeight: 18,
+    lineHeight: 20,
   },
   saveButton: {
     backgroundColor: COLORS.primary,
