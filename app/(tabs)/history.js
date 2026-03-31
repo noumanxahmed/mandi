@@ -1,117 +1,145 @@
 // app/(tabs)/history.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TextInput,
-  ScrollView,
-  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
-import { DUMMY_HISTORY, HISTORY_DATES } from "../../src/utils/dummyData";
-import HistoryCard from "../../src/components/HistoryCard";
+import CropCard from "../../src/components/CropCard";
+
+// --- FIREBASE IMPORTS ---
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "../../src/config/firebase";
 
 export default function HistoryScreen() {
-  // 1. Set up our state for the Search Bar and the active Date
+  const [allCrops, setAllCrops] = useState([]); // Holds EVERY price in the database
+  const [filteredCrops, setFilteredCrops] = useState([]); // Holds only what the user is searching for
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeDate, setActiveDate] = useState(HISTORY_DATES[0].fullDate); // Defaults to "14 مارچ 2026"
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 2. The Filter Logic: This runs every time the user types or clicks a date
-  const filteredHistory = DUMMY_HISTORY.filter((record) => {
-    const matchesDate = record.fullDate === activeDate;
-    const matchesSearch = record.cropName
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchesDate && matchesSearch;
-  });
+  // --- FETCH DATA FROM CLOUD ---
+  const fetchHistory = async () => {
+    try {
+      const q = query(
+        collection(db, "cropPrices"),
+        orderBy("timestamp", "desc"),
+      );
+      const querySnapshot = await getDocs(q);
+
+      const fetchedData = [];
+      querySnapshot.forEach((doc) => {
+        fetchedData.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      setAllCrops(fetchedData);
+      setFilteredCrops(fetchedData); // When it first loads, show everything
+    } catch (error) {
+      console.error("❌ Error fetching history:", error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchHistory();
+  };
+
+  // --- THE SEARCH LOGIC ---
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+
+    // If the search bar is empty, show all crops
+    if (text === "") {
+      setFilteredCrops(allCrops);
+    } else {
+      // Otherwise, filter the list! Convert everything to lowercase so "WHEAT" and "wheat" both work
+      const filtered = allCrops.filter((item) =>
+        item.cropName.toLowerCase().includes(text.toLowerCase()),
+      );
+      setFilteredCrops(filtered);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>ریکارڈ لوڈ ہو رہا ہے...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>قیمت کی تاریخ</Text>
+        <Text style={styles.headerTitle}>پرانا ریکارڈ (History)</Text>
       </View>
 
-      {/* Search Bar */}
+      {/* 👇 The Search Bar */}
       <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="فصل تلاش کریں (Search crop...)"
+          value={searchQuery}
+          onChangeText={handleSearch}
+          placeholderTextColor={COLORS.textMuted}
+        />
         <Ionicons
           name="search"
           size={20}
           color={COLORS.textMuted}
           style={styles.searchIcon}
         />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="فصل تلاش کریں..."
-          placeholderTextColor={COLORS.textMuted}
-          value={searchQuery}
-          onChangeText={(text) => setSearchQuery(text)}
-        />
-        {/* Quick clear button if text exists */}
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Interactive Date Selector */}
-      <View style={styles.dateSection}>
-        <Text style={styles.sectionTitle}>تاریخ منتخب کریں</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dateScroll}
-        >
-          {HISTORY_DATES.map((dateObj) => {
-            const isActive = activeDate === dateObj.fullDate;
-
-            return (
-              <TouchableOpacity
-                key={dateObj.id}
-                style={[styles.dateBox, isActive && styles.dateBoxActive]}
-                onPress={() => setActiveDate(dateObj.fullDate)}
-              >
-                <Text style={[styles.dateDay, isActive && styles.textWhite]}>
-                  {dateObj.dayName}
-                </Text>
-                <Text style={[styles.dateNumber, isActive && styles.textWhite]}>
-                  {dateObj.dateNum}
-                </Text>
-                <Text style={[styles.dateMonth, isActive && styles.textWhite]}>
-                  {dateObj.month}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* History List */}
-      <View style={styles.listHeader}>
-        <Text style={styles.sectionTitle}>منڈی کا ریکارڈ</Text>
-        <Ionicons name="filter" size={20} color={COLORS.textMuted} />
       </View>
 
       <FlatList
-        data={filteredHistory}
+        data={filteredCrops}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <HistoryCard record={item} />}
-        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <CropCard
+            crop={item.cropName}
+            date={item.fullDate}
+            max={item.maxPrice}
+            min={item.minPrice}
+          />
+        )}
+        contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+          />
+        }
         ListEmptyComponent={
-          <Text
-            style={{
-              textAlign: "center",
-              color: COLORS.textMuted,
-              marginTop: 20,
-            }}
-          >
-            کوئی ریکارڈ نہیں ملا (No records found)
-          </Text>
+          <View style={styles.emptyBox}>
+            <Ionicons
+              name="search-outline"
+              size={48}
+              color={COLORS.textMuted}
+            />
+            <Text style={styles.emptyText}>کوئی نتیجہ نہیں ملا</Text>
+            <Text style={styles.emptySubText}>
+              Try searching for a different crop
+            </Text>
+          </View>
         }
       />
     </View>
@@ -120,55 +148,58 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { padding: 20, paddingTop: 40, alignItems: "center" },
-  headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
-  searchContainer: {
-    flexDirection: "row",
-    backgroundColor: "#FFF",
-    marginHorizontal: 20,
-    borderRadius: 10,
-    paddingHorizontal: 15,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    height: 50,
-    elevation: 2,
+    backgroundColor: COLORS.background,
   },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, textAlign: "right", paddingRight: 10 },
-  dateSection: { marginTop: 20, paddingLeft: 20 },
-  sectionTitle: {
-    fontSize: 18,
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: COLORS.textMuted,
     fontWeight: "bold",
-    color: COLORS.textDark,
-    marginBottom: 10,
   },
-  dateScroll: { flexDirection: "row" },
-  dateBox: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    paddingVertical: 15,
+  header: {
+    paddingTop: 60,
+    paddingBottom: 20,
     paddingHorizontal: 20,
+    backgroundColor: "#FFF",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     alignItems: "center",
-    marginRight: 10,
-    elevation: 1,
-    minWidth: 80,
   },
-  dateBoxActive: { backgroundColor: COLORS.primary },
-  dateDay: { fontSize: 12, color: COLORS.textMuted, fontWeight: "bold" },
-  dateNumber: {
-    fontSize: 24,
-    fontWeight: "bold",
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: COLORS.primary },
+
+  // Search Bar Styles
+  searchContainer: {
+    flexDirection: "row-reverse", // Keeps Urdu text right-to-left friendly
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    margin: 20,
+    marginBottom: 0,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    height: 50,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    elevation: 2, // Slight shadow
+  },
+  searchIcon: { marginLeft: 10 },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
     color: COLORS.textDark,
-    marginVertical: 4,
+    textAlign: "right",
   },
-  dateMonth: { fontSize: 12, color: COLORS.textMuted },
-  textWhite: { color: "#FFF" },
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginHorizontal: 20,
-    marginTop: 25,
-    marginBottom: 10,
+
+  listContainer: { padding: 20, paddingBottom: 100 },
+  emptyBox: { alignItems: "center", marginTop: 50 },
+  emptyText: {
+    fontSize: 18,
+    color: COLORS.textDark,
+    fontWeight: "bold",
+    marginTop: 10,
   },
-  list: { paddingHorizontal: 20, paddingBottom: 20 },
+  emptySubText: { fontSize: 14, color: COLORS.textMuted, marginTop: 5 },
 });
