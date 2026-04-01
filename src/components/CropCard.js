@@ -4,29 +4,27 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../theme/colors";
 
-// 👇 Notice how we are now accepting the 4 separate props!
 export default function CropCard({ crop, date, max, min }) {
   return (
     <View style={styles.card}>
+      {/* 1. The Box on the Left (Keeping your original 80x80 size) */}
       <View style={styles.imagePlaceholder}>
         <Ionicons name="leaf" size={40} color={COLORS.primary} />
       </View>
 
+      {/* 2. The Content on the Right */}
       <View style={styles.content}>
-        {/* 👇 Using the separate props directly */}
         <Text style={styles.cropName}>{crop}</Text>
+
+        {/* Simple Date Text */}
         <Text style={styles.dateText}>آج کی قیمت: {date}</Text>
 
+        {/* 3. The New Single Line Price (No green/red, no icons) */}
         <View style={styles.priceRow}>
-          <Text style={styles.maxText}>زیادہ سے زیادہ: </Text>
-          <Text style={styles.maxPrice}>Rs {max}</Text>
-          <Ionicons name="trending-up" size={16} color={COLORS.success} />
-        </View>
-
-        <View style={styles.priceRow}>
-          <Text style={styles.minText}>کم از کم: </Text>
-          <Text style={styles.minPrice}>Rs {min}</Text>
-          <Ionicons name="trending-down" size={16} color={COLORS.alert} />
+          <Text style={styles.label}>ریٹ: </Text>
+          <Text style={styles.priceRange}>
+            Rs {max} - {min}
+          </Text>
         </View>
       </View>
     </View>
@@ -35,7 +33,7 @@ export default function CropCard({ crop, date, max, min }) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
+    flexDirection: "row", // Standard row for your layout
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
     padding: 15,
@@ -50,10 +48,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 15, // Gap between box and text
   },
   content: {
     flex: 1,
+    justifyContent: "center",
   },
   cropName: {
     fontSize: 18,
@@ -63,25 +62,19 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 13,
     color: COLORS.textMuted,
-    marginBottom: 8,
+    marginBottom: 8, // Space before the price line
   },
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
   },
-  maxText: { fontSize: 13, color: COLORS.textDark },
-  maxPrice: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: COLORS.success,
-    marginRight: 5,
+  label: {
+    fontSize: 14,
+    color: COLORS.textDark,
   },
-  minText: { fontSize: 13, color: COLORS.textDark },
-  minPrice: {
-    fontSize: 15,
+  priceRange: {
+    fontSize: 16,
     fontWeight: "bold",
-    color: COLORS.alert,
-    marginRight: 5,
+    color: COLORS.textDark, // Standard dark color (No more success/alert colors)
   },
 });

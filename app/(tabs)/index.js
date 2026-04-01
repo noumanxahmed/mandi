@@ -7,7 +7,9 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
 import CropCard from "../../src/components/CropCard";
 
@@ -17,13 +19,13 @@ import { db } from "../../src/config/firebase";
 
 export default function HomeScreen() {
   const [liveCrops, setLiveCrops] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(""); // 👈 NEW STATE FOR THE DATE
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // --- THE LOGIC: ONLY SHOW LATEST PRICE PER CROP ---
   const fetchLivePrices = async () => {
     try {
-      // 1. Fetch all prices, newest first
       const q = query(
         collection(db, "cropPrices"),
         orderBy("timestamp", "desc"),
@@ -31,16 +33,17 @@ export default function HomeScreen() {
 
       const querySnapshot = await getDocs(q);
 
-      // 2. This is the filter "Engine"
+      // 👇 Grab the date from the very first (newest) record!
+      if (!querySnapshot.empty) {
+        setLastUpdated(querySnapshot.docs[0].data().fullDate);
+      }
+
       const latestPricesMap = new Map();
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         const cropName = data.cropName;
 
-        // Since we ordered by 'desc' (newest first), the FIRST time we see
-        // a crop name, it is guaranteed to be the latest price.
-        // We only add it to the map if it's not already there.
         if (!latestPricesMap.has(cropName)) {
           latestPricesMap.set(cropName, {
             id: doc.id,
@@ -49,9 +52,7 @@ export default function HomeScreen() {
         }
       });
 
-      // 3. Convert our Map back into a simple array for the FlatList
       const finalDisplayList = Array.from(latestPricesMap.values());
-
       setLiveCrops(finalDisplayList);
     } catch (error) {
       console.error("❌ Error fetching live prices:", error);
@@ -84,8 +85,24 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>آج کی تازہ ترین قیمتیں</Text>
-        <Text style={styles.subHeader}>Latest Market Rates</Text>
+        <View style={styles.headerRow}>
+          <View style={{ width: 45 }} />
+
+          <View style={styles.titleWrapper}>
+            <Text style={styles.headerTitle}>چشتیاں کی تازہ ترین قیمتیں</Text>
+            {/* 👇 DYNAMIC DATE INSTEAD OF STATIC TEXT 👇 */}
+            <Text style={styles.subHeader}>
+              {lastUpdated ? `آخری اپڈیٹ: ${lastUpdated}` : "Loading..."}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.logoBox}
+            onPress={() => console.log("Logo Pressed")}
+          >
+            <Ionicons name="leaf" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -135,15 +152,53 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 60,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     backgroundColor: "#FFF",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    alignItems: "center",
+    elevation: 2,
   },
-  headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
-  subHeader: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  listContainer: { padding: 20, paddingBottom: 100 },
-  emptyBox: { alignItems: "center", marginTop: 50 },
-  emptyText: { fontSize: 18, color: COLORS.textDark, fontWeight: "bold" },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleWrapper: {
+    alignItems: "center",
+    flex: 1,
+  },
+  logoBox: {
+    width: 45,
+    height: 45,
+    backgroundColor: "#F0F9F0",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E8E0",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.primary,
+  },
+  subHeader: {
+    fontSize: 13, // Slightly increased size for readability
+    fontWeight: "600",
+    color: COLORS.success, // Made it green to signify fresh data
+    marginTop: 4,
+  },
+  listContainer: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  emptyBox: {
+    alignItems: "center",
+    marginTop: 50,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: COLORS.textDark,
+    fontWeight: "bold",
+  },
 });

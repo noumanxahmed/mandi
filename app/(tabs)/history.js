@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity, // 👈 Added for the logo button
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
@@ -87,11 +88,25 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 👇 UPDATED HEADER WITH LOGO BOX 👇 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>پرانا ریکارڈ (History)</Text>
+        <View style={styles.headerRow}>
+          {/* Left Spacer to keep title centered */}
+          <View style={{ width: 45 }} />
+
+          {/* Centered Title */}
+          <View style={styles.titleWrapper}>
+            <Text style={styles.headerTitle}>پرانا ریکارڈ (History)</Text>
+          </View>
+
+          {/* Logo Box (Top Right) */}
+          <TouchableOpacity style={styles.logoBox}>
+            <Ionicons name="leaf" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* 👇 The Search Bar */}
+      {/* The Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -160,16 +175,36 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontWeight: "bold",
   },
+  // 👇 Updated Header Styles 👇
   header: {
     paddingTop: 60,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     backgroundColor: "#FFF",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    alignItems: "center",
+    elevation: 2,
   },
-  headerTitle: { fontSize: 24, fontWeight: "bold", color: COLORS.primary },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  titleWrapper: {
+    alignItems: "center",
+    flex: 1,
+  },
+  logoBox: {
+    width: 45,
+    height: 45,
+    backgroundColor: "#F0F9F0",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E8E0",
+  },
+  headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
 
   // Search Bar Styles
   searchContainer: {
