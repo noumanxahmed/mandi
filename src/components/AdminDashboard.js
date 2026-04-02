@@ -1,5 +1,5 @@
 // src/components/AdminDashboard.js
-import React, { useState, useCallback } from "react"; // Added useCallback
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router"; // Added useFocusEffect
+import { useRouter, useFocusEffect } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { COLORS } from "../theme/colors";
 
@@ -47,6 +47,9 @@ export default function AdminDashboard({ onLogout }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+
+  // New Arrival State
+  const [arrival, setArrival] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +57,6 @@ export default function AdminDashboard({ onLogout }) {
   // --- FETCH CATEGORIES FROM FIREBASE ---
   const fetchCropCategories = async () => {
     try {
-      // 🚩 Must be exactly 'availableCrops' (lowercase 'a')
       const querySnapshot = await getDocs(collection(db, "availableCrops"));
       const fetchedCrops = [];
 
@@ -76,8 +78,6 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  // --- THE AUTO-REFRESH TRIGGER ---
-  // This runs every single time you navigate back to this screen from 'add-crop'
   useFocusEffect(
     useCallback(() => {
       fetchCropCategories();
@@ -91,14 +91,14 @@ export default function AdminDashboard({ onLogout }) {
     return `${day} ${month} ${year}`;
   };
 
-  const onChangeDate = (event, selectedDate) => {
-    setShowPicker(Platform.OS === "ios");
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
-  };
-
   const handleUpdate = async () => {
+    // 1. Check if Arrival is entered
+    if (arrival === "") {
+      Alert.alert("غلطی", "براہ کرم آمد (Arrival) درج کریں۔");
+      return;
+    }
+
+    // 2. ALWAYS enforce max and min prices, regardless of arrival
     if (!maxPrice || !minPrice) {
       Alert.alert(
         "غلطی",
@@ -112,13 +112,15 @@ export default function AdminDashboard({ onLogout }) {
       await addDoc(collection(db, "cropPrices"), {
         cropName: selectedCrop.name,
         fullDate: getFormattedUrduDate(date),
-        maxPrice: Number(maxPrice),
-        minPrice: Number(minPrice),
+        arrival: Number(arrival),
+        maxPrice: Number(maxPrice), // Always save the actual typed max price
+        minPrice: Number(minPrice), // Always save the actual typed min price
         timestamp: new Date(),
       });
-      Alert.alert("کامیابی", `${selectedCrop.name} کی قیمت محفوظ ہوگئی۔`);
+      Alert.alert("کامیابی", `${selectedCrop.name} کا ڈیٹا محفوظ ہوگیا۔`);
       setMaxPrice("");
       setMinPrice("");
+      setArrival("");
     } catch (error) {
       Alert.alert("غلطی", "ڈیٹا محفوظ نہیں ہوسکا۔");
     } finally {
@@ -137,12 +139,11 @@ export default function AdminDashboard({ onLogout }) {
           <Text style={styles.headerTitle}>ایڈمن پینل</Text>
           <Ionicons name="eye-off-outline" size={24} color={COLORS.primary} />
         </View>
-
-        <View style={styles.heroBox}>
+        {/* // not want this box right now */}
+        {/* <View style={styles.heroBox}>
           <Ionicons name="cloud-upload-outline" size={40} color="#FFF" />
           <Text style={styles.heroText}>کلاؤڈ ڈیٹا بیس میں محفوظ کریں</Text>
-        </View>
-
+        </View> */}
         <View style={styles.formSection}>
           <Text style={styles.label}>فصل منتخب کریں</Text>
 
@@ -161,7 +162,6 @@ export default function AdminDashboard({ onLogout }) {
             />
           </TouchableOpacity>
 
-          {/* Dropdown Menu */}
           {isDropdownOpen && (
             <View style={styles.dropdownMenu}>
               {availableCrops.map((crop) => (
@@ -198,12 +198,26 @@ export default function AdminDashboard({ onLogout }) {
               mode="date"
               display="default"
               onChange={(e, d) => {
-                setShowPicker(false);
+                setShowPicker(Platform.OS === "ios");
                 if (d) setDate(d);
               }}
             />
           )}
 
+          <Text style={styles.label}>آمد (Arrival)</Text>
+          <View style={styles.priceInputBox}>
+            <Text style={styles.currency}>من تقریباً</Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="0"
+              keyboardType="numeric"
+              value={arrival}
+              onChangeText={setArrival}
+            />
+            <Ionicons name="bus-outline" size={20} color={COLORS.primary} />
+          </View>
+
+          {/* 👇 REMOVED THE CONDITION SO THESE ALWAYS SHOW 👇 */}
           <Text style={styles.label}>زیادہ سے زیادہ قیمت</Text>
           <View style={styles.priceInputBox}>
             <Text style={styles.currency}>PKR</Text>

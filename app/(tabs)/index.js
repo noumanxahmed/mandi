@@ -8,32 +8,33 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  LogBox,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
 import CropCard from "../../src/components/CropCard";
 
-// --- FIREBASE IMPORTS ---
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
+// Note: The above log suppression is temporary. We will refactor to use the new SafeAreaView from react-native-safe-area-context in the future.  and second one is for firebase auth warning which is not relevant to our app right now.
+LogBox.ignoreLogs(["SafeAreaView has been deprecated", "@firebase/auth: Auth"]);
+``;
+
 export default function HomeScreen() {
   const [liveCrops, setLiveCrops] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(""); // 👈 NEW STATE FOR THE DATE
+  const [lastUpdated, setLastUpdated] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // --- THE LOGIC: ONLY SHOW LATEST PRICE PER CROP ---
   const fetchLivePrices = async () => {
     try {
       const q = query(
         collection(db, "cropPrices"),
         orderBy("timestamp", "desc"),
       );
-
       const querySnapshot = await getDocs(q);
 
-      // 👇 Grab the date from the very first (newest) record!
       if (!querySnapshot.empty) {
         setLastUpdated(querySnapshot.docs[0].data().fullDate);
       }
@@ -45,15 +46,11 @@ export default function HomeScreen() {
         const cropName = data.cropName;
 
         if (!latestPricesMap.has(cropName)) {
-          latestPricesMap.set(cropName, {
-            id: doc.id,
-            ...data,
-          });
+          latestPricesMap.set(cropName, { id: doc.id, ...data });
         }
       });
 
-      const finalDisplayList = Array.from(latestPricesMap.values());
-      setLiveCrops(finalDisplayList);
+      setLiveCrops(Array.from(latestPricesMap.values()));
     } catch (error) {
       console.error("❌ Error fetching live prices:", error);
     } finally {
@@ -87,19 +84,13 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ width: 45 }} />
-
           <View style={styles.titleWrapper}>
-            <Text style={styles.headerTitle}>چشتیاں کی تازہ ترین قیمتیں</Text>
-            {/* 👇 DYNAMIC DATE INSTEAD OF STATIC TEXT 👇 */}
+            <Text style={styles.headerTitle}>چشتیاں منڈی</Text>
             <Text style={styles.subHeader}>
-              {lastUpdated ? `آخری اپڈیٹ: ${lastUpdated}` : "Loading..."}
+              {lastUpdated ? `${lastUpdated}` : "Loading..."}
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.logoBox}
-            onPress={() => console.log("Logo Pressed")}
-          >
+          <TouchableOpacity style={styles.logoBox}>
             <Ionicons name="leaf" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
@@ -114,6 +105,7 @@ export default function HomeScreen() {
             date={item.fullDate}
             max={item.maxPrice}
             min={item.minPrice}
+            arrival={item.arrival} /* 👈 Passing Arrival */
           />
         )}
         contentContainerStyle={styles.listContainer}
@@ -163,10 +155,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  titleWrapper: {
-    alignItems: "center",
-    flex: 1,
-  },
+  titleWrapper: { alignItems: "center", flex: 1 },
   logoBox: {
     width: 45,
     height: 45,
@@ -177,28 +166,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E8E0",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.primary,
-  },
+  headerTitle: { fontSize: 20, fontWeight: "bold", color: COLORS.primary },
   subHeader: {
-    fontSize: 13, // Slightly increased size for readability
+    fontSize: 13,
     fontWeight: "600",
-    color: COLORS.success, // Made it green to signify fresh data
+    color: COLORS.success,
     marginTop: 4,
   },
-  listContainer: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  emptyBox: {
-    alignItems: "center",
-    marginTop: 50,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.textDark,
-    fontWeight: "bold",
-  },
+  listContainer: { padding: 20, paddingBottom: 100 },
+  emptyBox: { alignItems: "center", marginTop: 50 },
+  emptyText: { fontSize: 18, color: COLORS.textDark, fontWeight: "bold" },
 });

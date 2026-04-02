@@ -8,24 +8,22 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity, // 👈 Added for the logo button
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/theme/colors";
 import CropCard from "../../src/components/CropCard";
 
-// --- FIREBASE IMPORTS ---
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
 export default function HistoryScreen() {
-  const [allCrops, setAllCrops] = useState([]); // Holds EVERY price in the database
-  const [filteredCrops, setFilteredCrops] = useState([]); // Holds only what the user is searching for
+  const [allCrops, setAllCrops] = useState([]);
+  const [filteredCrops, setFilteredCrops] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // --- FETCH DATA FROM CLOUD ---
   const fetchHistory = async () => {
     try {
       const q = query(
@@ -36,14 +34,11 @@ export default function HistoryScreen() {
 
       const fetchedData = [];
       querySnapshot.forEach((doc) => {
-        fetchedData.push({
-          id: doc.id,
-          ...doc.data(),
-        });
+        fetchedData.push({ id: doc.id, ...doc.data() });
       });
 
       setAllCrops(fetchedData);
-      setFilteredCrops(fetchedData); // When it first loads, show everything
+      setFilteredCrops(fetchedData);
     } catch (error) {
       console.error("❌ Error fetching history:", error);
     } finally {
@@ -61,15 +56,11 @@ export default function HistoryScreen() {
     fetchHistory();
   };
 
-  // --- THE SEARCH LOGIC ---
   const handleSearch = (text) => {
     setSearchQuery(text);
-
-    // If the search bar is empty, show all crops
     if (text === "") {
       setFilteredCrops(allCrops);
     } else {
-      // Otherwise, filter the list! Convert everything to lowercase so "WHEAT" and "wheat" both work
       const filtered = allCrops.filter((item) =>
         item.cropName.toLowerCase().includes(text.toLowerCase()),
       );
@@ -88,25 +79,18 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 👇 UPDATED HEADER WITH LOGO BOX 👇 */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          {/* Left Spacer to keep title centered */}
           <View style={{ width: 45 }} />
-
-          {/* Centered Title */}
           <View style={styles.titleWrapper}>
             <Text style={styles.headerTitle}>پرانا ریکارڈ (History)</Text>
           </View>
-
-          {/* Logo Box (Top Right) */}
           <TouchableOpacity style={styles.logoBox}>
             <Ionicons name="leaf" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* The Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -132,6 +116,7 @@ export default function HistoryScreen() {
             date={item.fullDate}
             max={item.maxPrice}
             min={item.minPrice}
+            arrival={item.arrival} /* 👈 Passing Arrival */
           />
         )}
         contentContainerStyle={styles.listContainer}
@@ -175,7 +160,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontWeight: "bold",
   },
-  // 👇 Updated Header Styles 👇
   header: {
     paddingTop: 60,
     paddingBottom: 20,
@@ -190,10 +174,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  titleWrapper: {
-    alignItems: "center",
-    flex: 1,
-  },
+  titleWrapper: { alignItems: "center", flex: 1 },
   logoBox: {
     width: 45,
     height: 45,
@@ -205,10 +186,8 @@ const styles = StyleSheet.create({
     borderColor: "#E0E8E0",
   },
   headerTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary },
-
-  // Search Bar Styles
   searchContainer: {
-    flexDirection: "row-reverse", // Keeps Urdu text right-to-left friendly
+    flexDirection: "row-reverse",
     alignItems: "center",
     backgroundColor: "#FFF",
     margin: 20,
@@ -218,7 +197,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
-    elevation: 2, // Slight shadow
+    elevation: 2,
   },
   searchIcon: { marginLeft: 10 },
   searchInput: {
@@ -227,7 +206,6 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     textAlign: "right",
   },
-
   listContainer: { padding: 20, paddingBottom: 100 },
   emptyBox: { alignItems: "center", marginTop: 50 },
   emptyText: {

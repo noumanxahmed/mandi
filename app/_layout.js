@@ -1,3 +1,4 @@
+// app/_layout.js
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -5,9 +6,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
+  // 👇 Removed SafeAreaView from here
 } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
+
+// 👇 Added the new modern imports
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 // Force RTL for Urdu globally
 I18nManager.forceRTL(true);
@@ -25,21 +29,25 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F8F4" }}>
-      {/* Global Offline Alert Banner */}
-      {isOffline && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>
-            آپ آف لائن ہیں۔ پرانی قیمتیں دکھائی جا رہی ہیں۔
-          </Text>
-        </View>
-      )}
+    // 👇 1. Wrap your entire app inside the Provider
+    <SafeAreaProvider>
+      {/* 👇 2. This is now using the fast, modern SafeAreaView */}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F4F8F4" }}>
+        {/* Global Offline Alert Banner */}
+        {isOffline && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>
+              آپ آف لائن ہیں۔ پرانی قیمتیں دکھائی جا رہی ہیں۔
+            </Text>
+          </View>
+        )}
 
-      {/* This Stack automatically loads the (tabs) folder */}
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-    </SafeAreaView>
+        {/* This Stack automatically loads the (tabs) folder */}
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
