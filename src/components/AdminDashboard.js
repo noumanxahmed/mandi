@@ -17,7 +17,16 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { COLORS } from "../theme/colors";
 
 // --- FIREBASE IMPORTS ---
-import { collection, addDoc, getDocs } from "firebase/firestore";
+// 👇 Added query, where, updateDoc, and doc for the duplicate check
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import { db } from "../config/firebase";
 
 const urduMonths = [
@@ -109,19 +118,49 @@ export default function AdminDashboard({ onLogout }) {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "cropPrices"), {
-        cropName: selectedCrop.name,
-        fullDate: getFormattedUrduDate(date),
-        arrival: Number(arrival),
-        maxPrice: Number(maxPrice), // Always save the actual typed max price
-        minPrice: Number(minPrice), // Always save the actual typed min price
-        timestamp: new Date(),
-      });
-      Alert.alert("کامیابی", `${selectedCrop.name} کا ڈیٹا محفوظ ہوگیا۔`);
+      const formattedDate = getFormattedUrduDate(date);
+
+      // 👇 3. Check if this crop already exists for this exact date
+      const q = query(
+        collection(db, "cropPrices"),
+        where("cropName", "==", selectedCrop.name),
+        where("fullDate", "==", formattedDate),
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // ✅ RECORD EXISTS: Update the old one instead of duplicating
+        const existingDocId = querySnapshot.docs[0].id;
+        const docRef = doc(db, "cropPrices", existingDocId);
+
+        await updateDoc(docRef, {
+          arrival: Number(arrival),
+          maxPrice: Number(maxPrice),
+          minPrice: Number(minPrice),
+          timestamp: new Date(), // Keep the timestamp fresh
+        });
+
+        Alert.alert("کامیابی", `${selectedCrop.name} کا ڈیٹا اپڈیٹ ہوگیا۔`); // "Data Updated"
+      } else {
+        // 🆕 NO RECORD: Create a brand new one
+        await addDoc(collection(db, "cropPrices"), {
+          cropName: selectedCrop.name,
+          fullDate: formattedDate,
+          arrival: Number(arrival),
+          maxPrice: Number(maxPrice), // Always save the actual typed max price
+          minPrice: Number(minPrice), // Always save the actual typed min price
+          timestamp: new Date(),
+        });
+
+        Alert.alert("کامیابی", `${selectedCrop.name} کا نیا ڈیٹا محفوظ ہوگیا۔`); // "New Data Saved"
+      }
+
       setMaxPrice("");
       setMinPrice("");
       setArrival("");
     } catch (error) {
+      console.error(error);
       Alert.alert("غلطی", "ڈیٹا محفوظ نہیں ہوسکا۔");
     } finally {
       setIsSubmitting(false);
