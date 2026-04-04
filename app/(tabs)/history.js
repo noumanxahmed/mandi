@@ -1,5 +1,5 @@
 // app/(tabs)/history.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react"; // 👇 Added useCallback
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import CropCard from "../../src/components/CropCard";
 
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
+
+// 👇 Import useFocusEffect for auto-refresh
+import { useFocusEffect } from "expo-router";
 
 export default function HistoryScreen() {
   const [allCrops, setAllCrops] = useState([]);
@@ -47,9 +50,12 @@ export default function HistoryScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  // 👇 Replaced useEffect with useFocusEffect for Auto-Refresh
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, []),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -116,7 +122,7 @@ export default function HistoryScreen() {
             date={item.fullDate}
             max={item.maxPrice}
             min={item.minPrice}
-            arrival={item.arrival} /* 👈 Passing Arrival */
+            arrival={item.arrival}
           />
         )}
         contentContainerStyle={styles.listContainer}

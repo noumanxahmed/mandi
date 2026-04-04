@@ -1,5 +1,5 @@
 // app/(tabs)/index.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react"; // Added useCallback
 import {
   View,
   Text,
@@ -17,9 +17,10 @@ import CropCard from "../../src/components/CropCard";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
-// Note: The above log suppression is temporary. We will refactor to use the new SafeAreaView from react-native-safe-area-context in the future.  and second one is for firebase auth warning which is not relevant to our app right now.
+// 👇 Import useFocusEffect to handle auto-refreshing when screen is visited
+import { useFocusEffect } from "expo-router";
+
 LogBox.ignoreLogs(["SafeAreaView has been deprecated", "@firebase/auth: Auth"]);
-``;
 
 export default function HomeScreen() {
   const [liveCrops, setLiveCrops] = useState([]);
@@ -59,9 +60,13 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchLivePrices();
-  }, []);
+  // 👇 Replaced useEffect with useFocusEffect
+  // This ensures fetchLivePrices runs every time the user navigates back to this screen
+  useFocusEffect(
+    useCallback(() => {
+      fetchLivePrices();
+    }, []),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -105,7 +110,7 @@ export default function HomeScreen() {
             date={item.fullDate}
             max={item.maxPrice}
             min={item.minPrice}
-            arrival={item.arrival} /* 👈 Passing Arrival */
+            arrival={item.arrival}
           />
         )}
         contentContainerStyle={styles.listContainer}
