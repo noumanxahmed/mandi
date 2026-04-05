@@ -1,5 +1,5 @@
 // app/(tabs)/index.js
-import React, { useState, useCallback } from "react"; // Added useCallback
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,8 +17,9 @@ import CropCard from "../../src/components/CropCard";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
-// 👇 Import useFocusEffect to handle auto-refreshing when screen is visited
 import { useFocusEffect } from "expo-router";
+// 👇 IMPORT OFFLINE STORAGE
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 LogBox.ignoreLogs(["SafeAreaView has been deprecated", "@firebase/auth: Auth"]);
 
@@ -27,18 +28,26 @@ export default function HomeScreen() {
   const [lastUpdated, setLastUpdated] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // 👇 NEW: Track offline status
+  const [isOffline, setIsOffline] = useState(false);
 
   const fetchLivePrices = async () => {
     try {
+      // 1. TRY TO FETCH FROM FIREBASE (ONLINE)
       const q = query(
         collection(db, "cropPrices"),
         orderBy("timestamp", "desc"),
       );
       const querySnapshot = await getDocs(q);
 
-      if (!querySnapshot.empty) {
-        setLastUpdated(querySnapshot.docs[0].data().fullDate);
+      // 👇 THE SHIELD FIX 👇
+      // If Firebase returns nothing, force the app to go to the offline backup!
+      if (querySnapshot.empty) {
+        throw new Error("Firebase is empty, jumping to offline backup!");
       }
+
+      let fetchedDate = querySnapshot.docs[0].data().fullDate;
+      setLastUpdated(fetchedDate);
 
       const latestPricesMap = new Map();
 
@@ -51,17 +60,42 @@ export default function HomeScreen() {
         }
       });
 
-      setLiveCrops(Array.from(latestPricesMap.values()));
+      let cropsArray = Array.from(latestPricesMap.values());
+
+      setLiveCrops(cropsArray);
+      setIsOffline(false);
+
+      // 2. SAVE BACKUP TO PHONE
+      await AsyncStorage.setItem(
+        "@home_offline_crops",
+        JSON.stringify(cropsArray),
+      );
+      if (fetchedDate) {
+        await AsyncStorage.setItem("@home_offline_date", fetchedDate);
+      }
     } catch (error) {
-      console.error("❌ Error fetching live prices:", error);
+      // 3. OFFLINE MODE (Internet Failed OR Shield Triggered)
+      console.log("No Internet or Empty Data. Loading Backup...");
+      setIsOffline(true);
+
+      try {
+        const savedCrops = await AsyncStorage.getItem("@home_offline_crops");
+        const savedDate = await AsyncStorage.getItem("@home_offline_date");
+
+        if (savedCrops !== null) {
+          setLiveCrops(JSON.parse(savedCrops));
+        }
+        if (savedDate !== null) {
+          setLastUpdated(savedDate);
+        }
+      } catch (storageError) {
+        console.error("Failed to load local backup:", storageError);
+      }
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
-
-  // 👇 Replaced useEffect with useFocusEffect
-  // This ensures fetchLivePrices runs every time the user navigates back to this screen
   useFocusEffect(
     useCallback(() => {
       fetchLivePrices();
@@ -94,6 +128,12 @@ export default function HomeScreen() {
             <Text style={styles.subHeader}>
               {lastUpdated ? `${lastUpdated}` : "Loading..."}
             </Text>
+            {/* 👇 OFFLINE WARNING TEXT 👇 */}
+            {isOffline && (
+              <Text style={{ fontSize: 10, color: "red", marginTop: 2 }}>
+                (آف لائن - پرانا ڈیٹا)
+              </Text>
+            )}
           </View>
           <TouchableOpacity style={styles.logoBox}>
             <Ionicons name="leaf" size={24} color={COLORS.primary} />

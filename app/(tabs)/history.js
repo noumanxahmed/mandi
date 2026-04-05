@@ -1,5 +1,5 @@
 // app/(tabs)/history.js
-import React, { useState, useCallback } from "react"; // 👇 Added useCallback
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,8 +17,9 @@ import CropCard from "../../src/components/CropCard";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
-// 👇 Import useFocusEffect for auto-refresh
 import { useFocusEffect } from "expo-router";
+// 👇 IMPORT OFFLINE STORAGE
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function HistoryScreen() {
   const [allCrops, setAllCrops] = useState([]);
@@ -26,14 +27,25 @@ export default function HistoryScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // 👇 NEW: Track offline status
+  const [isOffline, setIsOffline] = useState(false);
 
   const fetchHistory = async () => {
     try {
+      // --- 1. ONLINE MODE ---
       const q = query(
         collection(db, "cropPrices"),
         orderBy("timestamp", "desc"),
       );
       const querySnapshot = await getDocs(q);
+
+      // 👇 THE SHIELD FIX 👇
+      // If Firebase returns an empty list (often happens when offline), force the offline backup!
+      if (querySnapshot.empty) {
+        throw new Error(
+          "Firebase is empty, jumping to history offline backup!",
+        );
+      }
 
       const fetchedData = [];
       querySnapshot.forEach((doc) => {
@@ -42,15 +54,38 @@ export default function HistoryScreen() {
 
       setAllCrops(fetchedData);
       setFilteredCrops(fetchedData);
+      setIsOffline(false); // We are online
+
+      // 👇 SAVE BACKUP TO PHONE
+      await AsyncStorage.setItem(
+        "@history_offline_crops",
+        JSON.stringify(fetchedData),
+      );
     } catch (error) {
-      console.error("❌ Error fetching history:", error);
+      // --- 2. OFFLINE MODE (Internet Failed or Shield Triggered) ---
+      console.log(
+        "No Internet or Empty Data. Loading History Offline Backup...",
+      );
+      setIsOffline(true);
+
+      try {
+        // 👇 LOAD BACKUP FROM PHONE
+        const savedCrops = await AsyncStorage.getItem("@history_offline_crops");
+
+        if (savedCrops !== null) {
+          const parsedCrops = JSON.parse(savedCrops);
+          setAllCrops(parsedCrops);
+          setFilteredCrops(parsedCrops);
+        }
+      } catch (storageError) {
+        console.error("Failed to load local backup:", storageError);
+      }
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
 
-  // 👇 Replaced useEffect with useFocusEffect for Auto-Refresh
   useFocusEffect(
     useCallback(() => {
       fetchHistory();
@@ -90,6 +125,12 @@ export default function HistoryScreen() {
           <View style={{ width: 45 }} />
           <View style={styles.titleWrapper}>
             <Text style={styles.headerTitle}>پرانا ریکارڈ (History)</Text>
+            {/* 👇 OFFLINE WARNING TEXT 👇 */}
+            {isOffline && (
+              <Text style={{ fontSize: 10, color: "red", marginTop: 2 }}>
+                (آف لائن - پرانا ڈیٹا)
+              </Text>
+            )}
           </View>
           <TouchableOpacity style={styles.logoBox}>
             <Ionicons name="leaf" size={24} color={COLORS.primary} />
