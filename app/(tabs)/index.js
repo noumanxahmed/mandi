@@ -17,8 +17,8 @@ import CropCard from "../../src/components/CropCard";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
-import { useFocusEffect } from "expo-router";
-// 👇 IMPORT OFFLINE STORAGE
+// 👇 IMPORTED `useRouter` FOR NAVIGATION
+import { useFocusEffect, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 LogBox.ignoreLogs(["SafeAreaView has been deprecated", "@firebase/auth: Auth"]);
@@ -28,8 +28,10 @@ export default function HomeScreen() {
   const [lastUpdated, setLastUpdated] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // 👇 NEW: Track offline status
   const [isOffline, setIsOffline] = useState(false);
+
+  // 👇 INITIALIZED THE ROUTER
+  const router = useRouter();
 
   const fetchLivePrices = async () => {
     try {
@@ -40,7 +42,6 @@ export default function HomeScreen() {
       );
       const querySnapshot = await getDocs(q);
 
-      // 👇 THE SHIELD FIX 👇
       // If Firebase returns nothing, force the app to go to the offline backup!
       if (querySnapshot.empty) {
         throw new Error("Firebase is empty, jumping to offline backup!");
@@ -96,6 +97,7 @@ export default function HomeScreen() {
       setRefreshing(false);
     }
   };
+
   useFocusEffect(
     useCallback(() => {
       fetchLivePrices();
@@ -124,19 +126,23 @@ export default function HomeScreen() {
         <View style={styles.headerRow}>
           <View style={{ width: 45 }} />
           <View style={styles.titleWrapper}>
-            <Text style={styles.headerTitle}>چشتیاں منڈی</Text>
+            <Text style={styles.headerTitle}>غلہ منڈی چشتیاں</Text>
             <Text style={styles.subHeader}>
               {lastUpdated ? `${lastUpdated}` : "Loading..."}
             </Text>
-            {/* 👇 OFFLINE WARNING TEXT 👇 */}
             {isOffline && (
               <Text style={{ fontSize: 10, color: "red", marginTop: 2 }}>
                 (آف لائن - پرانا ڈیٹا)
               </Text>
             )}
           </View>
-          <TouchableOpacity style={styles.logoBox}>
-            <Ionicons name="leaf" size={24} color={COLORS.primary} />
+
+          {/* 👇 UPDATED ADMIN SETTINGS BUTTON 👇 */}
+          <TouchableOpacity
+            style={styles.logoBox}
+            onPress={() => router.push("/admin")}
+          >
+            <Ionicons name="settings" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -145,13 +151,24 @@ export default function HomeScreen() {
         data={liveCrops}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <CropCard
-            crop={item.cropName}
-            date={item.fullDate}
-            max={item.maxPrice}
-            min={item.minPrice}
-            arrival={item.arrival}
-          />
+          // 👇 WRAPPED CROP CARD FOR NAVIGATION 👇
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: "/crop-history",
+                params: { cropName: item.cropName },
+              })
+            }
+          >
+            <CropCard
+              crop={item.cropName}
+              date={item.fullDate}
+              max={item.maxPrice}
+              min={item.minPrice}
+              arrival={item.arrival}
+            />
+          </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}

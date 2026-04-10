@@ -5,8 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../theme/colors";
 
 export default function CropCard({ crop, date, max, min, arrival }) {
-  // 👇 NEW LOGIC: We ONLY check if the prices are 0-0 (for older records).
-  // We no longer hide the rate just because arrival is 0!
   const isZeroPrice = max === 0 && min === 0;
 
   const hasArrivalData =
@@ -25,7 +23,7 @@ export default function CropCard({ crop, date, max, min, arrival }) {
 
         <Text style={styles.dateText}>آج کی قیمت: {date}</Text>
 
-        {/* Arrival Row (Will now show "آمد: 0 بوری" if you typed 0) */}
+        {/* Arrival Row */}
         {hasArrivalData && (
           <View style={styles.infoRow}>
             <Text style={styles.label}>آمد: </Text>
@@ -33,7 +31,7 @@ export default function CropCard({ crop, date, max, min, arrival }) {
           </View>
         )}
 
-        {/* The Price Row OR The "No Rate" Message for old 0-0 records */}
+        {/* The Price Row OR The "No Rate" Message */}
         {isZeroPrice ? (
           <View style={styles.infoRow}>
             <Text style={styles.noRateText}>کوئی ریٹ نہیں (No Rate)</Text>
@@ -46,6 +44,12 @@ export default function CropCard({ crop, date, max, min, arrival }) {
             </Text>
           </View>
         )}
+
+        {/* 👇 THE NEW HISTORY LINK ROW 👇 */}
+        {/* <View style={styles.historyLinkRow}>
+          <Text style={styles.historyLinkText}>پرانا ریکارڈ دیکھیں</Text>
+          <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
+        </View> */}
       </View>
     </View>
   );
@@ -108,5 +112,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.alert,
     marginTop: 2,
+  },
+  // 👇 NEW STYLES FOR THE HISTORY LINK 👇
+  historyLinkRow: {
+    flexDirection: "row-reverse", // Keeps icon on the left of Urdu text
+    alignItems: "center",
+    justifyContent: "flex-end", // Pushes it to the right side of the box
+    marginTop: 10,
+  },
+  historyLinkText: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: "bold",
+    marginRight: 4,
   },
 });
