@@ -6,124 +6,101 @@ import { COLORS } from "../theme/colors";
 
 export default function CropCard({ crop, date, max, min, arrival }) {
   const isZeroPrice = max === 0 && min === 0;
-
   const hasArrivalData =
     arrival !== undefined && arrival !== null && arrival !== "";
 
+  // Optional: This removes the year (e.g., "2026") from the date to save screen space!
+  const shortDate = date ? date.replace(/ 20\d{2}/, "") : "";
+
   return (
-    <View style={styles.card}>
-      {/* The Box on the Left */}
-      <View style={styles.imagePlaceholder}>
-        <Ionicons name="leaf" size={40} color={COLORS.primary} />
+    <View style={styles.tableRow}>
+      {/* 1. Date Column (Far Right) */}
+      <View style={[styles.cell, { flex: 1.8, alignItems: "flex-end" }]}>
+        <Text style={styles.dateText} numberOfLines={1} adjustsFontSizeToFit>
+          {shortDate}
+        </Text>
       </View>
 
-      {/* The Content on the Right */}
-      <View style={styles.content}>
-        <Text style={styles.cropName}>{crop}</Text>
+      {/* 2. Crop Name Column */}
+      <View style={[styles.cell, { flex: 2.2, alignItems: "center" }]}>
+        <Text style={styles.cropName} numberOfLines={1} adjustsFontSizeToFit>
+          {crop}
+        </Text>
+      </View>
 
-        <Text style={styles.dateText}>آج کی قیمت: {date}</Text>
-
-        {/* Arrival Row */}
-        {hasArrivalData && (
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>آمد: </Text>
-            <Text style={styles.arrivalText}>{arrival} من تقریباً</Text>
-          </View>
-        )}
-
-        {/* The Price Row OR The "No Rate" Message */}
+      {/* 3. Rate Column (Gets the most space since prices are long) */}
+      <View style={[styles.cell, { flex: 3.2, alignItems: "center" }]}>
         {isZeroPrice ? (
-          <View style={styles.infoRow}>
-            <Text style={styles.noRateText}>کوئی ریٹ نہیں (No Rate)</Text>
-          </View>
+          <Text style={styles.noRateText}>-</Text>
         ) : (
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>ریٹ: </Text>
-            <Text style={styles.priceRange}>
-              Rs {max} - {min}
-            </Text>
-          </View>
+          <Text
+            style={styles.priceRange}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {max}-{min}
+          </Text>
         )}
+      </View>
 
-        {/* 👇 THE NEW HISTORY LINK ROW 👇 */}
-        {/* <View style={styles.historyLinkRow}>
-          <Text style={styles.historyLinkText}>پرانا ریکارڈ دیکھیں</Text>
-          <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
-        </View> */}
+      {/* 4. Arrival Column */}
+      <View style={[styles.cell, { flex: 1.3, alignItems: "center" }]}>
+        <Text style={styles.arrivalText} numberOfLines={1} adjustsFontSizeToFit>
+          {hasArrivalData ? arrival : "-"}
+        </Text>
+      </View>
+
+      {/* 5. Click Indicator Icon */}
+      <View style={styles.iconCell}>
+        <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
+  tableRow: {
+    flexDirection: "row-reverse", // Right-to-Left for Urdu
+    backgroundColor: "#FFF",
+    paddingVertical: 15,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     alignItems: "center",
   },
-  imagePlaceholder: {
-    width: 80,
-    height: 80,
-    backgroundColor: COLORS.inputBackground,
-    borderRadius: 10,
+  cell: {
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  cropName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.textDark,
+    paddingHorizontal: 2, // Tiny buffer so text doesn't touch
   },
   dateText: {
     fontSize: 13,
-    color: COLORS.textMuted,
-    marginBottom: 6,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  label: {
-    fontSize: 14,
-    color: COLORS.textDark,
-  },
-  arrivalText: {
-    fontSize: 14,
     fontWeight: "bold",
-    color: COLORS.primary,
+    color: COLORS.textMuted,
+    textAlign: "right",
+  },
+  cropName: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: COLORS.textDark,
+    textAlign: "center",
   },
   priceRange: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: COLORS.textDark,
   },
   noRateText: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: COLORS.alert,
-    marginTop: 2,
+    fontSize: 14,
+    color: COLORS.textMuted,
   },
-  // 👇 NEW STYLES FOR THE HISTORY LINK 👇
-  historyLinkRow: {
-    flexDirection: "row-reverse", // Keeps icon on the left of Urdu text
-    alignItems: "center",
-    justifyContent: "flex-end", // Pushes it to the right side of the box
-    marginTop: 10,
-  },
-  historyLinkText: {
-    fontSize: 13,
+  arrivalText: {
+    fontSize: 14,
+    fontWeight: "600",
     color: COLORS.primary,
-    fontWeight: "bold",
-    marginRight: 4,
+  },
+  iconCell: {
+    width: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

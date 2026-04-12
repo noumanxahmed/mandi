@@ -17,7 +17,6 @@ import CropCard from "../../src/components/CropCard";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../src/config/firebase";
 
-// 👇 IMPORTED `useRouter` FOR NAVIGATION
 import { useFocusEffect, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -30,19 +29,16 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
-  // 👇 INITIALIZED THE ROUTER
   const router = useRouter();
 
   const fetchLivePrices = async () => {
     try {
-      // 1. TRY TO FETCH FROM FIREBASE (ONLINE)
       const q = query(
         collection(db, "cropPrices"),
         orderBy("timestamp", "desc"),
       );
       const querySnapshot = await getDocs(q);
 
-      // If Firebase returns nothing, force the app to go to the offline backup!
       if (querySnapshot.empty) {
         throw new Error("Firebase is empty, jumping to offline backup!");
       }
@@ -66,7 +62,6 @@ export default function HomeScreen() {
       setLiveCrops(cropsArray);
       setIsOffline(false);
 
-      // 2. SAVE BACKUP TO PHONE
       await AsyncStorage.setItem(
         "@home_offline_crops",
         JSON.stringify(cropsArray),
@@ -75,7 +70,6 @@ export default function HomeScreen() {
         await AsyncStorage.setItem("@home_offline_date", fetchedDate);
       }
     } catch (error) {
-      // 3. OFFLINE MODE (Internet Failed OR Shield Triggered)
       console.log("No Internet or Empty Data. Loading Backup...");
       setIsOffline(true);
 
@@ -137,7 +131,6 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* 👇 UPDATED ADMIN SETTINGS BUTTON 👇 */}
           <TouchableOpacity
             style={styles.logoBox}
             onPress={() => router.push("/admin")}
@@ -147,11 +140,34 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <View style={styles.tableHeaderRow}>
+        <Text
+          style={[styles.tableHeaderText, { flex: 1.8, textAlign: "right" }]}
+        >
+          تاریخ
+        </Text>
+        <Text
+          style={[styles.tableHeaderText, { flex: 2.2, textAlign: "center" }]}
+        >
+          اجناس
+        </Text>
+        <Text
+          style={[styles.tableHeaderText, { flex: 3.2, textAlign: "center" }]}
+        >
+          ریٹ
+        </Text>
+        <Text
+          style={[styles.tableHeaderText, { flex: 1.3, textAlign: "center" }]}
+        >
+          آمد (من)
+        </Text>
+        <View style={{ width: 16 }} />
+      </View>
+
       <FlatList
         data={liveCrops}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          // 👇 WRAPPED CROP CARD FOR NAVIGATION 👇
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() =>
@@ -208,8 +224,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 15,
     backgroundColor: "#FFF",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     elevation: 2,
   },
   headerRow: {
@@ -235,7 +249,20 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     marginTop: 4,
   },
-  listContainer: { padding: 20, paddingBottom: 100 },
+  tableHeaderRow: {
+    flexDirection: "row-reverse",
+    backgroundColor: "#F0F9F0",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableHeaderText: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: COLORS.primary,
+  },
+  listContainer: { paddingHorizontal: 20, paddingBottom: 100 },
   emptyBox: { alignItems: "center", marginTop: 50 },
   emptyText: { fontSize: 18, color: COLORS.textDark, fontWeight: "bold" },
 });
