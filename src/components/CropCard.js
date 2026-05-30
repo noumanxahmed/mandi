@@ -9,26 +9,19 @@ export default function CropCard({ crop, date, max, min, arrival }) {
   const hasArrivalData =
     arrival !== undefined && arrival !== null && arrival !== "";
 
-  // Optional: This removes the year (e.g., "2026") from the date to save screen space!
   const shortDate = date ? date.replace(/ 20\d{2}/, "") : "";
 
   return (
-    <View style={styles.tableRow}>
-      {/* 1. Date Column (Far Right) */}
-      <View style={[styles.cell, { flex: 1.8, alignItems: "flex-end" }]}>
-        <Text style={styles.dateText} numberOfLines={1} adjustsFontSizeToFit>
-          {shortDate}
-        </Text>
+    <View style={[styles.tableRow, { direction: "ltr" }]}>
+      <View style={styles.iconCell}>
+        <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
       </View>
 
-      {/* 2. Crop Name Column */}
-      <View style={[styles.cell, { flex: 2.2, alignItems: "center" }]}>
-        <Text style={styles.cropName} numberOfLines={1} adjustsFontSizeToFit>
-          {crop}
+      <View style={[styles.cell, { flex: 1.3, alignItems: "flex-start" }]}>
+        <Text style={styles.arrivalText} numberOfLines={1} adjustsFontSizeToFit>
+          {hasArrivalData ? arrival : "-"}
         </Text>
       </View>
-
-      {/* 3. Rate Column (Gets the most space since prices are long) */}
       <View style={[styles.cell, { flex: 3.2, alignItems: "center" }]}>
         {isZeroPrice ? (
           <Text style={styles.noRateText}>-</Text>
@@ -43,16 +36,16 @@ export default function CropCard({ crop, date, max, min, arrival }) {
         )}
       </View>
 
-      {/* 4. Arrival Column */}
-      <View style={[styles.cell, { flex: 1.3, alignItems: "center" }]}>
-        <Text style={styles.arrivalText} numberOfLines={1} adjustsFontSizeToFit>
-          {hasArrivalData ? arrival : "-"}
+      <View style={[styles.cell, { flex: 2.2, alignItems: "center" }]}>
+        <Text style={styles.cropName} numberOfLines={1} adjustsFontSizeToFit>
+          {crop}
         </Text>
       </View>
 
-      {/* 5. Click Indicator Icon */}
-      <View style={styles.iconCell}>
-        <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
+      <View style={[styles.cell, { flex: 1.8, alignItems: "flex-end" }]}>
+        <Text style={styles.dateText} numberOfLines={1} adjustsFontSizeToFit>
+          {shortDate}
+        </Text>
       </View>
     </View>
   );
@@ -60,7 +53,7 @@ export default function CropCard({ crop, date, max, min, arrival }) {
 
 const styles = StyleSheet.create({
   tableRow: {
-    flexDirection: "row-reverse", // Right-to-Left for Urdu
+    flexDirection: "row",
     backgroundColor: "#FFF",
     paddingVertical: 15,
     paddingHorizontal: 8,
@@ -70,7 +63,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     justifyContent: "center",
-    paddingHorizontal: 2, // Tiny buffer so text doesn't touch
+    paddingHorizontal: 2,
   },
   dateText: {
     fontSize: 13,
@@ -79,18 +72,18 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   cropName: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "bold",
     color: COLORS.textDark,
     textAlign: "center",
   },
   priceRange: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: "bold",
     color: COLORS.textDark,
   },
   noRateText: {
-    fontSize: 14,
+    fontSize: 18,
     color: COLORS.textMuted,
   },
   arrivalText: {

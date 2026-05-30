@@ -140,16 +140,12 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={styles.tableHeaderRow}>
+      <View style={[styles.tableHeaderRow, { direction: "ltr" }]}>
+        <View style={{ width: 16 }} />
         <Text
-          style={[styles.tableHeaderText, { flex: 1.8, textAlign: "right" }]}
+          style={[styles.tableHeaderText, { flex: 1.3, textAlign: "left" }]}
         >
-          تاریخ
-        </Text>
-        <Text
-          style={[styles.tableHeaderText, { flex: 2.2, textAlign: "center" }]}
-        >
-          اجناس
+          آمد (من)
         </Text>
         <Text
           style={[styles.tableHeaderText, { flex: 3.2, textAlign: "center" }]}
@@ -157,11 +153,15 @@ export default function HomeScreen() {
           ریٹ
         </Text>
         <Text
-          style={[styles.tableHeaderText, { flex: 1.3, textAlign: "center" }]}
+          style={[styles.tableHeaderText, { flex: 2.2, textAlign: "center" }]}
         >
-          آمد (من)
+          اجناس
         </Text>
-        <View style={{ width: 16 }} />
+        <Text
+          style={[styles.tableHeaderText, { flex: 1.8, textAlign: "right" }]}
+        >
+          تاریخ
+        </Text>
       </View>
 
       <FlatList
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   tableHeaderRow: {
-    flexDirection: "row-reverse",
+    flexDirection: "row",
     backgroundColor: "#F0F9F0",
     paddingVertical: 12,
     paddingHorizontal: 30,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   tableHeaderText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "bold",
     color: COLORS.primary,
   },
