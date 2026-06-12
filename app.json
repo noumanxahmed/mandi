@@ -2,7 +2,7 @@
   "expo": {
     "name": "Mandi",
     "slug": "mandi",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mandi",
@@ -13,12 +13,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#2E7D32",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.noumanxahmed.mandi"
+      "package": "com.noumanxahmed.mandi",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -32,7 +33,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#2E7D32"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "@react-native-community/datetimepicker"
